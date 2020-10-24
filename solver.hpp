@@ -16,3 +16,18 @@ class HeuristicSolver: public Solver
         vector<int> solve(vector<vector<int>> instance);
 };
 
+class GreedySolver: public Solver
+{
+    private:
+        vector<int> random_permutation(int n);
+        int dynamic_score_solution(
+                vector<vector<int>> &instance,
+                vector<int> &solution,
+                int i,
+                int j,
+                int score);
+
+    public:
+        vector<int> solve(vector<vector<int>> instance);
+};
+
