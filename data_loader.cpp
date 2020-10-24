@@ -14,21 +14,22 @@ vector<vector<int>> DataLoader::load(string filename)
     vector<vector<int>> instance(N, vector<int>(N));
     int I = 0;
     int row, col;
+    string number_buffer =  " ";
 
-    // fill cells 1 by 1
-    while (true)
+    while (getline(file, buffer) && buffer != "EOF")
     {
-        getline(file, buffer);
-        if (buffer == "EOF") break;
-
-        size_t line_pos = 1;
-        while (line_pos < buffer.length())
+        buffer += ' ';
+        for (char &c : buffer)
         {
-            col = I % N; 
-            row = (int) (I - col) / N;
-            I++;
-            instance[row][col] = stoi(buffer.substr(line_pos, 8));
-            line_pos += 8;
+            if (c == ' ' && number_buffer.back() != ' ')
+            {
+                col = I % N; 
+                row = (int) (I - col) / N;
+                I++;
+                instance[row][col] = stoi(number_buffer);
+                number_buffer = " ";
+            }
+            number_buffer += c;
         }
     }
     return instance;
