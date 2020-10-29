@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <random>
 #include <iostream>
+#include <chrono>
 
 const int MAX_INT = numeric_limits<int>::max();
 
@@ -21,41 +22,14 @@ int argmin(vector<int> &row)
     return argmin;
 }
 
-int Solver::score_solution(const vector<int> &solution, const vector<vector<int>> &instance)
+void Solver::random_permutation(vector<int> &perm)
 {
-    int score = 0;
-    for (int i = 1; i < solution.size(); i++)
-        score += instance[solution[i-1]][solution[i]];
-    score += instance[solution[solution.size()-1]][solution[0]];
-    return score;
-}
-
-
-
-vector<int> HeuristicSolver::solve(vector<vector<int>> instance)
-{
-    vector<int> solution(instance.size(), 0);
-    int idx = 0;
-
-    for (int i = 1; i < instance.size(); i++)
-    {
-        for (int j = 0; j < instance.size(); j++) instance[j][idx] = MAX_INT;
-        int amin = argmin(instance[idx]);
-        solution[i] = amin;
-        idx = amin;
-    }
-    return solution;
-}
-
-
-vector<int> GreedySolver::random_permutation(int n)
-{
+    int n = perm.size();
     vector<int> sack(n);
     for (int i = 0; i < n; i++)
     {
         sack[i] = i;
     }
-    vector<int> perm(n);
 
     std::random_device rd;
     for (int i = 0; i < n; i++)
@@ -65,17 +39,28 @@ vector<int> GreedySolver::random_permutation(int n)
         perm[i] = sack[idx];
         sack.erase(sack.begin() + idx);
     }
-    return perm;
 }
 
-int GreedySolver::dynamic_score_solution(
-            vector<vector<int>> &instance,
+int Solver::score_solution(const vector<int> &solution, const vector<vector<int>> &instance)
+{
+    int score = 0;
+    for (int i = 1; i < solution.size(); i++)
+        score += instance[solution[i-1]][solution[i]];
+    score += instance[solution[solution.size()-1]][solution[0]];
+    return score;
+}
+
+int Solver::dynamic_score_solution(
+            const vector<vector<int>> &instance,
             vector<int> &solution,
             int i,
             int j,
             int score)
 {
     int N = solution.size();
+    if (j < i) swap(i,j);
+    if (j == N-1 && i == 0) swap(i,j);
+
 
     int city_before_i = solution[(i-1+N)%N];
     int city_i = solution[i];
@@ -83,8 +68,8 @@ int GreedySolver::dynamic_score_solution(
     int city_before_j = solution[j-1];
     int city_j = solution[j];
     int city_after_j = solution[(j+1)%N];
-
-    if (j == i+1)
+    
+    if (abs(i-j) == 1 || abs(i-j) == N-1)
     {
         score -= instance[city_before_i][city_i];
         score -= instance[city_i][city_j];
@@ -110,10 +95,29 @@ int GreedySolver::dynamic_score_solution(
 }
 
 
-vector<int> GreedySolver::solve(vector<vector<int>> instance)
+
+vector<int> HeuristicSolver::solve(vector<vector<int>> instance)
 {
-    vector<int> solution = random_permutation(instance.size());
-    int score = this->score_solution(solution, instance);
+    vector<int> solution(instance.size(), 0);
+    int idx = 0;
+
+    for (int i = 1; i < instance.size(); i++)
+    {
+        for (int j = 0; j < instance.size(); j++) instance[j][idx] = MAX_INT;
+        int amin = argmin(instance[idx]);
+        solution[i] = amin;
+        idx = amin;
+    }
+    return solution;
+}
+
+
+
+vector<int> GreedySolver::solve(const vector<vector<int>> &instance)
+{
+    vector<int> solution(instance.size());
+    random_permutation(solution);
+    int score = score_solution(solution, instance);
     bool improved;
     int new_score;
 
@@ -124,7 +128,7 @@ vector<int> GreedySolver::solve(vector<vector<int>> instance)
         {
             for(int j = i+1; j < instance.size(); j++)
             {
-                new_score = this->dynamic_score_solution(instance, solution, i, j, score);
+                new_score = dynamic_score_solution(instance, solution, i, j, score);
                 if (new_score < score)
                 {
                     score = new_score;
@@ -139,3 +143,65 @@ vector<int> GreedySolver::solve(vector<vector<int>> instance)
     }
     return solution;
 }
+
+
+
+vector<int> RandomSolver::solve(const vector<vector<int>> &instance, float T)
+{
+    vector<int> temp(instance.size());
+    random_permutation(temp);
+    vector<int> best(temp);
+    int best_score = score_solution(temp, instance); int score;
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+
+    while(true)
+    {
+        chrono::steady_clock::time_point time = chrono::steady_clock::now();
+        auto time_passed = chrono::duration_cast<chrono::milliseconds> (time - begin).count() / 1000.0;
+        if (time_passed > T) break;
+
+        random_permutation(temp);
+        if ((score = score_solution(temp, instance)) < best_score)
+        {
+            best = temp;
+            best_score = score;
+        }
+    }
+    return best;
+}
+
+
+
+vector<int> RandomWalkSolver::solve(const vector<vector<int>> &instance, float T)
+{
+    vector<int> temp(instance.size());
+    random_permutation(temp);
+    vector<int> best(temp);
+    int score = score_solution(temp, instance);
+    int best_score = score;
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+
+    random_device rd;
+    uniform_int_distribution<int> distribution(0,temp.size()-1);
+    while(true)
+    {
+        chrono::steady_clock::time_point time = chrono::steady_clock::now();
+        auto time_passed = chrono::duration_cast<chrono::milliseconds> (time - begin).count() / 1000.0;
+        if (time_passed > T) break;
+
+        int i = distribution(rd);
+        int j = distribution(rd);
+        if (i == j) continue;
+         
+        score = dynamic_score_solution(instance, temp, i, j, score);
+        swap(temp[i], temp[j]);
+        if (score < best_score)
+        {
+            best_score = score;
+            best = temp;
+        }
+    }
+    return best;
+}
+
+
