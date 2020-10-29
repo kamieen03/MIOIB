@@ -205,3 +205,35 @@ vector<int> RandomWalkSolver::solve(const vector<vector<int>> &instance, float T
 }
 
 
+
+vector<int> SteepestSolver::solve(const vector<vector<int>> &instance)
+{
+    vector<int> solution(instance.size());
+    random_permutation(solution);
+    int score = score_solution(solution, instance);
+    int best_ngbh_score = score;
+    bool improved;
+    int new_score, best_I, best_J;
+
+    while(true)
+    {
+        improved = false;
+        for(int i = 0; i < instance.size() - 1; i++)
+        {
+            for(int j = i+1; j < instance.size(); j++)
+            {
+                new_score = dynamic_score_solution(instance, solution, i, j, score);
+                if (new_score < best_ngbh_score)
+                {
+                    best_I = i; best_J = j;
+                    best_ngbh_score = new_score;
+                    improved = true;
+                }
+            }
+        }
+        if (!improved) break;
+        swap(solution[best_I], solution[best_J]);
+        score = best_ngbh_score;
+    }
+    return solution;
+}

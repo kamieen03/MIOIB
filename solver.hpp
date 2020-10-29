@@ -40,3 +40,8 @@ class RandomWalkSolver: public Solver
         vector<int> solve(const vector<vector<int>> &instance, float T); // T in seconds
 };
 
+class SteepestSolver: public Solver
+{
+    public:
+        vector<int> solve(const vector<vector<int>> &instance);
+};
