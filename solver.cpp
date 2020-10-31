@@ -113,7 +113,7 @@ vector<int> HeuristicSolver::solve(vector<vector<int>> instance)
 
 
 
-vector<int> GreedySolver::solve(const vector<vector<int>> &instance)
+vector<int> GreedySolver::solve(const vector<vector<int>> instance)
 {
     vector<int> solution(instance.size());
     random_permutation(solution);
@@ -206,7 +206,7 @@ vector<int> RandomWalkSolver::solve(const vector<vector<int>> &instance, float T
 
 
 
-vector<int> SteepestSolver::solve(const vector<vector<int>> &instance)
+vector<int> SteepestSolver::solve(const vector<vector<int>> instance)
 {
     vector<int> solution(instance.size());
     random_permutation(solution);

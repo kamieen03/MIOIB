@@ -13,6 +13,8 @@ class Solver
                 int j,
                 int score);
         void random_permutation(vector<int> &permutation);
+        virtual vector<int> solve(vector<vector<int>> instance) {};
+        virtual vector<int> solve(const vector<vector<int>> &instance, float T) {}; // T in seconds
 };
 
 
@@ -25,7 +27,7 @@ class HeuristicSolver: public Solver
 class GreedySolver: public Solver
 {
     public:
-        vector<int> solve(const vector<vector<int>> &instance);
+        vector<int> solve(const vector<vector<int>> instance);
 };
 
 class RandomSolver: public Solver
@@ -43,5 +45,5 @@ class RandomWalkSolver: public Solver
 class SteepestSolver: public Solver
 {
     public:
-        vector<int> solve(const vector<vector<int>> &instance);
+        vector<int> solve(const vector<vector<int>> instance);
 };
