@@ -79,22 +79,27 @@ void exp2()
 }
 
 
+const string Result3::SIGNATURE = "NAME ; INIT ; FINAL";
 void exp3()
 {
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
     SteepestSolver *S = new SteepestSolver();
-    vector<string> instance_names({"br17", "ft53"});
-    for (string &i_name : instance_names)
+    vector<pair<string, float> > instances({    // (name, optimum)
+            make_pair("br17", 1000.0),          //TODO
+            make_pair("ft53", 2000.0)
+    });
+    cout << Result3::SIGNATURE << endl;
+    for (const auto &name_opt : instances)
     {
-        const vector<vector<int>> instance = dl.load("instancje/" + i_name + ".atsp");
+        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
         vector<vector<int>> instance_copy = instance;
         for (int i = 0; i < 200; i++)
         {
             instance_copy = instance;
-            cout << Result3(G->solve(instance_copy, -1.), instance, "G");
+            cout << Result3(G->solve(instance_copy, -1.), instance, name_opt.second, "G");
             instance_copy = instance;
-            cout << Result3(S->solve(instance_copy, -1.), instance, "S");
+            cout << Result3(S->solve(instance_copy, -1.), instance, name_opt.second, "S");
         }
     }
 }

@@ -46,16 +46,18 @@ void exp2();
 class Result3
 {
     public:
-        int init_score;
-        int final_score;
+        float init_score;   //the lower the better
+        float final_score;
         string alg_name;
-        Result3(const SolverResult &sr, const vector<vector<int>> &instance, const string alg_name):
-            init_score(sr.init_val),
-            final_score(Solver::score_solution(sr.solution, instance)),
+        Result3(const SolverResult &sr, const vector<vector<int>> &instance,
+                const float instance_optimum, const string alg_name):
+            init_score(sr.init_val / instance_optimum),
+            final_score(Solver::score_solution(sr.solution, instance) / instance_optimum),
             alg_name(alg_name) {};
         friend ostream &operator<<(ostream &os, Result3 const &r) { 
             return os << r.alg_name << ";" << r.init_score << ";" << r.final_score << endl;
         }
+        static const string SIGNATURE;
 };
 void exp3();
 
