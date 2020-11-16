@@ -96,7 +96,7 @@ int Solver::dynamic_score_solution(
 
 
 
-vector<int> HeuristicSolver::solve(vector<vector<int>> instance)
+SolverResult HeuristicSolver::solve(vector<vector<int>> instance)
 {
     vector<int> solution(instance.size(), 0);
     int idx = 0;
@@ -108,19 +108,21 @@ vector<int> HeuristicSolver::solve(vector<vector<int>> instance)
         solution[i] = amin;
         idx = amin;
     }
-    return solution;
+    return SolverResult(solution, 0, 0, 0);
 }
 
 
 
-vector<int> GreedySolver::solve(const vector<vector<int>> instance)
+SolverResult GreedySolver::solve(const vector<vector<int>> instance)
 {
     vector<int> solution(instance.size());
     random_permutation(solution);
     int score = score_solution(solution, instance);
+    int init_score = score;
     bool improved;
     int new_score;
-
+    int steps = 0;
+    int checked_solutions = 0;
     while(true)
     {
         improved = false;
@@ -128,12 +130,14 @@ vector<int> GreedySolver::solve(const vector<vector<int>> instance)
         {
             for(int j = i+1; j < instance.size(); j++)
             {
+                checked_solutions++;
                 new_score = dynamic_score_solution(instance, solution, i, j, score);
                 if (new_score < score)
                 {
                     score = new_score;
                     swap(solution[i], solution[j]);
                     improved = true;
+                    steps++;
                     break;
                 }
             }
@@ -141,18 +145,19 @@ vector<int> GreedySolver::solve(const vector<vector<int>> instance)
         }
         if (!improved) break;
     }
-    return solution;
+    return SolverResult(solution, steps, checked_solutions, init_score);
 }
 
 
 
-vector<int> RandomSolver::solve(const vector<vector<int>> &instance, float T)
+SolverResult RandomSolver::solve(const vector<vector<int>> &instance, float T)
 {
     vector<int> temp(instance.size());
     random_permutation(temp);
     vector<int> best(temp);
     int best_score = score_solution(temp, instance); int score;
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+    int checked_solutions = 0;
 
     while(true)
     {
@@ -161,24 +166,26 @@ vector<int> RandomSolver::solve(const vector<vector<int>> &instance, float T)
         if (time_passed > T) break;
 
         random_permutation(temp);
+        checked_solutions++;
         if ((score = score_solution(temp, instance)) < best_score)
         {
             best = temp;
             best_score = score;
         }
     }
-    return best;
+    return SolverResult(best, 0, checked_solutions, 0);
 }
 
 
 
-vector<int> RandomWalkSolver::solve(const vector<vector<int>> &instance, float T)
+SolverResult RandomWalkSolver::solve(const vector<vector<int>> &instance, float T)
 {
     vector<int> temp(instance.size());
     random_permutation(temp);
     vector<int> best(temp);
     int score = score_solution(temp, instance);
     int best_score = score;
+    int checked_solutions = 0;
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
     random_device rd;
@@ -200,20 +207,24 @@ vector<int> RandomWalkSolver::solve(const vector<vector<int>> &instance, float T
             best_score = score;
             best = temp;
         }
+        checked_solutions++;
     }
-    return best;
+    return SolverResult(best, 0, checked_solutions, 0);
 }
 
 
 
-vector<int> SteepestSolver::solve(const vector<vector<int>> instance)
+SolverResult SteepestSolver::solve(const vector<vector<int>> instance)
 {
     vector<int> solution(instance.size());
     random_permutation(solution);
     int score = score_solution(solution, instance);
+    int init_score = score;
     int best_ngbh_score = score;
     bool improved;
     int new_score, best_I, best_J;
+    int steps = 0;
+    int checked_solutions = 0;
 
     while(true)
     {
@@ -222,6 +233,7 @@ vector<int> SteepestSolver::solve(const vector<vector<int>> instance)
         {
             for(int j = i+1; j < instance.size(); j++)
             {
+                checked_solutions++;
                 new_score = dynamic_score_solution(instance, solution, i, j, score);
                 if (new_score < best_ngbh_score)
                 {
@@ -234,6 +246,7 @@ vector<int> SteepestSolver::solve(const vector<vector<int>> instance)
         if (!improved) break;
         swap(solution[best_I], solution[best_J]);
         score = best_ngbh_score;
+        steps++;
     }
-    return solution;
+    return SolverResult(solution, steps, checked_solutions, init_score);
 }
