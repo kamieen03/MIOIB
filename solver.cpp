@@ -96,7 +96,7 @@ int Solver::dynamic_score_solution(
 
 
 
-SolverResult HeuristicSolver::solve(vector<vector<int>> instance)
+SolverResult HeuristicSolver::solve(vector<vector<int>> &instance, float T)
 {
     vector<int> solution(instance.size(), 0);
     int idx = 0;
@@ -113,7 +113,7 @@ SolverResult HeuristicSolver::solve(vector<vector<int>> instance)
 
 
 
-SolverResult GreedySolver::solve(const vector<vector<int>> instance)
+SolverResult GreedySolver::solve(vector<vector<int>> &instance, float T)
 {
     vector<int> solution(instance.size());
     random_permutation(solution);
@@ -150,7 +150,7 @@ SolverResult GreedySolver::solve(const vector<vector<int>> instance)
 
 
 
-SolverResult RandomSolver::solve(const vector<vector<int>> &instance, float T)
+SolverResult RandomSolver::solve(vector<vector<int>> &instance, float T)
 {
     vector<int> temp(instance.size());
     random_permutation(temp);
@@ -162,7 +162,7 @@ SolverResult RandomSolver::solve(const vector<vector<int>> &instance, float T)
     while(true)
     {
         chrono::steady_clock::time_point time = chrono::steady_clock::now();
-        auto time_passed = chrono::duration_cast<chrono::milliseconds> (time - begin).count() / 1000.0;
+        auto time_passed = chrono::duration_cast<chrono::microseconds> (time - begin).count();
         if (time_passed > T) break;
 
         random_permutation(temp);
@@ -178,7 +178,7 @@ SolverResult RandomSolver::solve(const vector<vector<int>> &instance, float T)
 
 
 
-SolverResult RandomWalkSolver::solve(const vector<vector<int>> &instance, float T)
+SolverResult RandomWalkSolver::solve(vector<vector<int>> &instance, float T)
 {
     vector<int> temp(instance.size());
     random_permutation(temp);
@@ -193,7 +193,7 @@ SolverResult RandomWalkSolver::solve(const vector<vector<int>> &instance, float 
     while(true)
     {
         chrono::steady_clock::time_point time = chrono::steady_clock::now();
-        auto time_passed = chrono::duration_cast<chrono::milliseconds> (time - begin).count() / 1000.0;
+        auto time_passed = chrono::duration_cast<chrono::microseconds> (time - begin).count();
         if (time_passed > T) break;
 
         int i = distribution(rd);
@@ -214,7 +214,7 @@ SolverResult RandomWalkSolver::solve(const vector<vector<int>> &instance, float 
 
 
 
-SolverResult SteepestSolver::solve(const vector<vector<int>> instance)
+SolverResult SteepestSolver::solve(vector<vector<int>> &instance, float T)
 {
     vector<int> solution(instance.size());
     random_permutation(solution);

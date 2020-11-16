@@ -1,12 +1,13 @@
 #include "experiments.hpp"
 
-
 using namespace std;
+
+const string Result::SIGNATURE = "NAME ; BEST ; AVG ; STD ; WORST ; TIME ; STEPS ; CHECKED";
 
 Result::Result(const vector<SolverResult> &srs, const vector<float> &scores,
         const vector<float> &times, const string alg_name)
 {
-    best_score = *max_element(scores.begin(), scores.end());
+    worst_score = *max_element(scores.begin(), scores.end());
     avg_score = accumulate(scores.begin(), scores.end(), 0) / 10.0;
     std_score = 0;
     for(float s : scores)
@@ -14,8 +15,9 @@ Result::Result(const vector<SolverResult> &srs, const vector<float> &scores,
         std_score += pow(s-avg_score, 2);
     }
     std_score = sqrt(std_score / 10.0);
-    worst_score = *min_element(scores.begin(), scores.end());
+    best_score = *min_element(scores.begin(), scores.end());
     avg_time = accumulate(times.begin(), times.end(), 0) / 10.0;
+    time_quality = 1 / (avg_score * avg_time);  //the bigger the better
     steps = 0;
     for (const SolverResult &sr : srs)
         steps += sr.steps / 10.0;
@@ -26,25 +28,26 @@ Result::Result(const vector<SolverResult> &srs, const vector<float> &scores,
 }
 
 
-Result tenfold_run(string alg_name, Solver *s, vector<vector<int>> instance, float T)
+Result tenfold_run(const string alg_name, Solver *s, const vector<vector<int>> instance,
+                   const float T, const float instance_optimum)
 {
     vector<float> scores;
     vector<float> times;
     vector<SolverResult> srs(10);
     for (int i = 0; i < 10; i++)
     {
+        vector<vector<int>> instance_copy = instance;
         chrono::steady_clock::time_point begin = chrono::steady_clock::now();
-        if (alg_name == "R" || alg_name == "RW")
-             srs[i] = s->solve(instance, T);
-        else
-             srs[i] = s->solve(instance);
+        srs[i] = s->solve(instance_copy, T);
         chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
-        float time = chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() / 1000.0;
+        float time = chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
         times.push_back(time);
         float score = (float) Solver::score_solution(srs[i].solution, instance);
         scores.push_back(score);
     }
+    for(float &score : scores)
+        score /= instance_optimum;  //the smaller the better
     return Result(srs, scores, times, alg_name);
 }
 
@@ -57,15 +60,21 @@ void exp2()
     RandomSolver *R = new RandomSolver();
     RandomWalkSolver *RW = new RandomWalkSolver();
 
-    vector<string> instance_names({"br17", "ft53"});
-    for (string &i_name : instance_names)
+    vector<pair<string, float> > instances({    // (name, optimum)
+            make_pair("br17", 1000.0),          //TODO
+            make_pair("ft53", 2000.0)
+    });
+    cout << Result::SIGNATURE << endl;
+    for (auto &name_opt : instances)
     {
-        vector<vector<int>> instance = dl.load("instancje/" + i_name + ".atsp");
-        cout << tenfold_run("H", H, instance, -1.);
-        cout << tenfold_run("G", G, instance, -1.);
-        cout << tenfold_run("S", S, instance, -1.);
-        cout << tenfold_run("R", R, instance, 1.0);
-        cout << tenfold_run("RW", RW, instance, 1.0);
+        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        cout << tenfold_run("H", H, instance, -1., name_opt.second);
+        Result greedy_result = tenfold_run("G", G, instance, -1., name_opt.second);
+        float time = greedy_result.avg_time;
+        cout << greedy_result;
+        cout << tenfold_run("S", S, instance, -1., name_opt.second);
+        cout << tenfold_run("R", R, instance, time, name_opt.second);
+        cout << tenfold_run("RW", RW, instance, time, name_opt.second);
     }
 }
 
@@ -78,11 +87,14 @@ void exp3()
     vector<string> instance_names({"br17", "ft53"});
     for (string &i_name : instance_names)
     {
-        vector<vector<int>> instance = dl.load("instancje/" + i_name + ".atsp");
+        const vector<vector<int>> instance = dl.load("instancje/" + i_name + ".atsp");
+        vector<vector<int>> instance_copy = instance;
         for (int i = 0; i < 200; i++)
         {
-            cout << Result3(G->solve(instance), instance, "G");
-            cout << Result3(S->solve(instance), instance, "S");
+            instance_copy = instance;
+            cout << Result3(G->solve(instance_copy, -1.), instance, "G");
+            instance_copy = instance;
+            cout << Result3(S->solve(instance_copy, -1.), instance, "S");
         }
     }
 }

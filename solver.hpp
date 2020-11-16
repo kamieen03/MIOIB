@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 
 using namespace std;
 
@@ -10,7 +11,7 @@ class SolverResult
         int checked_solutions;  // G, S, R, RW only
         int init_val;
         SolverResult(){};
-        SolverResult(vector<int> solution, int steps, int checked_solution, int init_val):
+        SolverResult(vector<int> solution, int steps, int checked_solutions, int init_val):
             solution(solution),
             steps(steps),
             checked_solutions(checked_solutions),
@@ -28,37 +29,36 @@ class Solver
                 int j,
                 int score);
         void random_permutation(vector<int> &permutation);
-        virtual SolverResult solve(vector<vector<int>> instance) {};
-        virtual SolverResult solve(const vector<vector<int>> &instance, float T) {}; // T in seconds
+        virtual SolverResult solve(vector<vector<int>> &instance, float T) = 0;
 };
 
 
 class HeuristicSolver: public Solver
 {
     public:
-        SolverResult solve(vector<vector<int>> instance);;
+        SolverResult solve(vector<vector<int>> &instance, float T);
 };
 
 class GreedySolver: public Solver
 {
     public:
-        SolverResult solve(const vector<vector<int>> instance);
+        SolverResult solve(vector<vector<int>> &instance, float T);
 };
 
 class RandomSolver: public Solver
 {
     public:
-        SolverResult solve(const vector<vector<int>> &instance, float T); // T in seconds
+        SolverResult solve(vector<vector<int>> &instance, float T); // T in microseconds
 };
 
 class RandomWalkSolver: public Solver
 {
     public:
-        SolverResult solve(const vector<vector<int>> &instance, float T); // T in seconds
+        SolverResult solve(vector<vector<int>> &instance, float T); // T in microseconds
 };
 
 class SteepestSolver: public Solver
 {
     public:
-        SolverResult solve(const vector<vector<int>> instance);
+        SolverResult solve(vector<vector<int>> &instance, float T);
 };
