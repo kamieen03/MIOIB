@@ -68,6 +68,8 @@ void exp2()
     for (auto &name_opt : instances)
     {
         const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        cout << "INSTANCE;" << name_opt.first << endl;
+
         cout << tenfold_run("H", H, instance, -1., name_opt.second);
         Result greedy_result = tenfold_run("G", G, instance, -1., name_opt.second);
         float time = greedy_result.avg_time;
@@ -94,6 +96,8 @@ void exp3()
     {
         const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
         vector<vector<int>> instance_copy = instance;
+        cout << "INSTANCE;" << name_opt.first << endl;
+
         for (int i = 0; i < 200; i++)
         {
             instance_copy = instance;
