@@ -105,3 +105,40 @@ void exp3()
 }
 
 
+void exp4()
+{
+    DataLoader dl;
+    GreedySolver *G = new GreedySolver();
+    SteepestSolver *S = new SteepestSolver();
+    vector<pair<string, float> > instances({    // (name, optimum)
+            make_pair("br17", 1000.0),          //TODO
+            make_pair("ft53", 2000.0)
+    });
+    
+    float temp;
+    for (const auto &name_opt : instances)
+    {
+        cout << "INSTANCE;" << name_opt.first << endl;
+        float sum_G = 0;
+        float best_G = numeric_limits<float>::max();
+        float sum_S = 0;
+        float best_S = numeric_limits<float>::max();
+        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        vector<vector<int>> instance_copy = instance;
+        
+        for (int i = 1; i <= 300; i++)
+        {
+            instance_copy = instance;
+            temp = Solver::score_solution(G->solve(instance_copy, -1.).solution, instance) / name_opt.second;
+            sum_G += temp;
+            if (temp < best_G) best_G = temp;
+            cout << "G;" << sum_G / i << ";" << best_G << endl;
+
+            instance_copy = instance;
+            temp = Solver::score_solution(S->solve(instance_copy, -1.).solution, instance) / name_opt.second;
+            sum_S += temp;
+            if (temp < best_S) best_S = temp;
+            cout << "S;" << sum_S / i << ";" << best_S << endl;
+        }
+    }
+}
