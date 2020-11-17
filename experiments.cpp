@@ -53,6 +53,8 @@ Result tenfold_run(const string alg_name, Solver *s, const vector<vector<int>> i
 
 void exp2()
 {
+    freopen("results/exp2.csv","w",stdout);
+
     DataLoader dl;
     HeuristicSolver *H = new HeuristicSolver();
     GreedySolver *G = new GreedySolver();
@@ -84,6 +86,8 @@ void exp2()
 const string Result3::SIGNATURE = "NAME ; INIT ; FINAL";
 void exp3()
 {
+    freopen("results/exp3.csv","w",stdout);
+
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
     SteepestSolver *S = new SteepestSolver();
@@ -111,6 +115,8 @@ void exp3()
 
 void exp4()
 {
+    freopen("results/exp4.csv","w",stdout);
+
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
     SteepestSolver *S = new SteepestSolver();
@@ -143,6 +149,76 @@ void exp4()
             sum_S += temp;
             if (temp < best_S) best_S = temp;
             cout << "S;" << sum_S / i << ";" << best_S << endl;
+        }
+    }
+}
+
+
+
+float distance(const vector<int> &perm1, const vector<int> &perm2)
+{
+    // inverse perm2
+    vector<int> perm2_inv(perm2.size());
+    for(int i = 0; i < perm2.size(); i++)
+        perm2_inv[perm2[i]] = i;
+
+    // compose permutations
+    vector<int> composed(perm2.size());
+    for(int i = 0; i < perm2.size(); i++)
+        composed[i] = perm1[perm2_inv[i]];
+
+    // compute shortest transposition distance between 'composed' and identity permutation
+    float dist = 0;
+    for(int i = 0; i < perm2.size(); i++)
+    {
+        for(; composed[i] != i; dist++)
+            swap(composed[composed[i]], composed[i]);
+    }
+    return dist;
+}
+
+void exp5()
+{
+    freopen("results/exp5.csv","w",stdout);
+
+    DataLoader dl;
+    GreedySolver *G = new GreedySolver();
+    vector<pair<string, float> > instances({    // (name, optimum)
+            make_pair("br17", 1000.0),          //TODO
+            make_pair("ft53", 2000.0)
+    });
+    
+    for (const auto &name_opt : instances)
+    {
+        vector<SolverResult> srs(200);
+        int best_idx = -1;
+        int best_score = numeric_limits<int>::max();
+        int score;
+        vector<float> scores(srs.size());
+        float dist;
+
+        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        vector<vector<int>> instance_copy = instance;
+        cout << "INSTANCE;" << name_opt.first << endl;
+        
+        // run alg 200, compute scores and best score
+        for(int i = 0; i < 200; i++)
+        {
+            instance_copy = instance;
+            srs[i] = G->solve(instance_copy, -1.);
+            score = Solver::score_solution(srs[i].solution, instance);
+            scores[i] = (float) score;
+            if (score < best_score)
+            {
+                best_score = score;
+                best_idx = i;
+            }
+        }
+        
+        for(int i = 0; i < srs.size(); i++)
+        {
+            dist = distance(srs[i].solution, srs[best_idx].solution);
+            cout << scores[i] / best_score << ";" << dist << endl;
         }
     }
 }

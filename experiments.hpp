@@ -64,3 +64,7 @@ void exp3();
 
 
 void exp4();
+
+
+float distance(const vector<int> &perm1, const vector<int> &perm2);
+void exp5();
