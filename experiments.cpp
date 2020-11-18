@@ -2,13 +2,13 @@
 
 using namespace std;
 
-const string Result::SIGNATURE = "NAME ; BEST ; AVG ; STD ; WORST ; TIME ; STEPS ; CHECKED";
+const string Result::SIGNATURE = "NAME ; BEST ; AVG ; STD ; WORST ; TIME ; TIME_QUALITY ; STEPS ; CHECKED";
 
 Result::Result(const vector<SolverResult> &srs, const vector<float> &scores,
         const vector<float> &times, const string alg_name)
 {
     worst_score = *max_element(scores.begin(), scores.end());
-    avg_score = accumulate(scores.begin(), scores.end(), 0) / 10.0;
+    avg_score = accumulate(scores.begin(), scores.end(), 0.0) / 10.0;
     std_score = 0;
     for(float s : scores)
     {
@@ -62,23 +62,31 @@ void exp2()
     RandomSolver *R = new RandomSolver();
     RandomWalkSolver *RW = new RandomWalkSolver();
 
-    vector<pair<string, float> > instances({    // (name, optimum)
-            make_pair("br17", 1000.0),          //TODO
-            make_pair("ft53", 2000.0)
+    vector<string> instances({
+            "br17",
+            "ftv35",
+            "p43",
+            "ry48p",
+            "ftv55",
+            "ft70",
+            "kro124p",
+            "ftv170",
+            "rbg323",
+            "rbg403"
     });
     cout << Result::SIGNATURE << endl;
-    for (auto &name_opt : instances)
+    for (const string &instance_name : instances)
     {
-        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
-        cout << "INSTANCE;" << name_opt.first << endl;
+        const vector<vector<int>> instance = dl.load("instancje/" + instance_name + ".atsp");
+        cout << "INSTANCE;" << instance_name << endl;
 
-        cout << tenfold_run("H", H, instance, -1., name_opt.second);
-        Result greedy_result = tenfold_run("G", G, instance, -1., name_opt.second);
+        cout << tenfold_run("H", H, instance, -1., DataLoader::OPTIMA.at(instance_name));
+        Result greedy_result = tenfold_run("G", G, instance, -1., DataLoader::OPTIMA.at(instance_name));
         float time = greedy_result.avg_time;
         cout << greedy_result;
-        cout << tenfold_run("S", S, instance, -1., name_opt.second);
-        cout << tenfold_run("R", R, instance, time, name_opt.second);
-        cout << tenfold_run("RW", RW, instance, time, name_opt.second);
+        cout << tenfold_run("S", S, instance, -1., DataLoader::OPTIMA.at(instance_name));
+        cout << tenfold_run("R", R, instance, time, DataLoader::OPTIMA.at(instance_name));
+        cout << tenfold_run("RW", RW, instance, time, DataLoader::OPTIMA.at(instance_name));
     }
 }
 
@@ -91,24 +99,27 @@ void exp3()
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
     SteepestSolver *S = new SteepestSolver();
-    vector<pair<string, float> > instances({    // (name, optimum)
-            make_pair("br17", 1000.0),          //TODO
-            make_pair("ft53", 2000.0)
+    vector<string> instances({
+       "br17",
+       "p43",
+       "ry48p",
+       "rbg358"
     });
     cout << Result3::SIGNATURE << endl;
-    for (const auto &name_opt : instances)
+    for (const string &instance_name : instances)
     {
-        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        const vector<vector<int>> instance = dl.load("instancje/" + instance_name + ".atsp");
         vector<vector<int>> instance_copy = instance;
-        cout << "INSTANCE;" << name_opt.first << endl;
+        cout << "INSTANCE;" << instance_name << endl;
 
         for (int i = 0; i < 200; i++)
         {
             instance_copy = instance;
-            cout << Result3(G->solve(instance_copy, -1.), instance, name_opt.second, "G");
+            cout << Result3(G->solve(instance_copy, -1.), instance, DataLoader::OPTIMA.at(instance_name), "G");
             instance_copy = instance;
-            cout << Result3(S->solve(instance_copy, -1.), instance, name_opt.second, "S");
+            cout << Result3(S->solve(instance_copy, -1.), instance, DataLoader::OPTIMA.at(instance_name), "S");
         }
+        cout << "INSTANCE END" << endl;
     }
 }
 
@@ -120,32 +131,35 @@ void exp4()
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
     SteepestSolver *S = new SteepestSolver();
-    vector<pair<string, float> > instances({    // (name, optimum)
-            make_pair("br17", 1000.0),          //TODO
-            make_pair("ft53", 2000.0)
+    vector<string> instances({
+       "br17",
+       "p43",
+       "ry48p",
+       "ft53",
+       "rbg358"
     });
     
     float temp;
-    for (const auto &name_opt : instances)
+    for (const string &instance_name : instances)
     {
-        cout << "INSTANCE;" << name_opt.first << endl;
+        cout << "INSTANCE;" << instance_name << endl;
         float sum_G = 0;
         float best_G = numeric_limits<float>::max();
         float sum_S = 0;
         float best_S = numeric_limits<float>::max();
-        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        const vector<vector<int>> instance = dl.load("instancje/" + instance_name + ".atsp");
         vector<vector<int>> instance_copy = instance;
         
         for (int i = 1; i <= 300; i++)
         {
             instance_copy = instance;
-            temp = Solver::score_solution(G->solve(instance_copy, -1.).solution, instance) / name_opt.second;
+            temp = Solver::score_solution(G->solve(instance_copy, -1.).solution, instance) / DataLoader::OPTIMA.at(instance_name);
             sum_G += temp;
             if (temp < best_G) best_G = temp;
             cout << "G;" << sum_G / i << ";" << best_G << endl;
 
             instance_copy = instance;
-            temp = Solver::score_solution(S->solve(instance_copy, -1.).solution, instance) / name_opt.second;
+            temp = Solver::score_solution(S->solve(instance_copy, -1.).solution, instance) / DataLoader::OPTIMA.at(instance_name);
             sum_S += temp;
             if (temp < best_S) best_S = temp;
             cout << "S;" << sum_S / i << ";" << best_S << endl;
@@ -183,12 +197,12 @@ void exp5()
 
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
-    vector<pair<string, float> > instances({    // (name, optimum)
-            make_pair("br17", 1000.0),          //TODO
-            make_pair("ft53", 2000.0)
+    vector<string> instances({
+        "p43",
+        "ry48p"
     });
     
-    for (const auto &name_opt : instances)
+    for (const string &instance_name : instances)
     {
         vector<SolverResult> srs(200);
         int best_idx = -1;
@@ -197,9 +211,9 @@ void exp5()
         vector<float> scores(srs.size());
         float dist;
 
-        const vector<vector<int>> instance = dl.load("instancje/" + name_opt.first + ".atsp");
+        const vector<vector<int>> instance = dl.load("instancje/" + instance_name + ".atsp");
         vector<vector<int>> instance_copy = instance;
-        cout << "INSTANCE;" << name_opt.first << endl;
+        cout << "INSTANCE;" << instance_name << endl;
         
         // run alg 200, compute scores and best score
         for(int i = 0; i < 200; i++)

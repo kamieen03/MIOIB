@@ -34,6 +34,7 @@ class Result
                          r.std_score << ";" <<
                          r.worst_score << ";" <<
                          r.avg_time << ";" <<
+                         r.time_quality << ";" <<
                          r.steps << ";" <<
                          r.checked_solutions <<endl;
         }

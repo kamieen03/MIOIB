@@ -2,6 +2,8 @@
 
 int main()
 {
+    DataLoader l;
+    l.test_instances();
     exp2();
     exp3();
     exp4();
