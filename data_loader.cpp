@@ -58,7 +58,7 @@ const map<string, float> DataLoader::OPTIMA = {
     {"ry48p",   14422}
 };
 
-float DataLoader::assymetry(const vector<vector<int>> &instance)
+float DataLoader::asymetry(const vector<vector<int>> &instance)
 {
     float mean = 0;
     float mean_diff = 0;
@@ -70,7 +70,7 @@ float DataLoader::assymetry(const vector<vector<int>> &instance)
             if (j > i) mean_diff += abs(instance[i][j] - instance[j][i]);
         }
     }
-    return mean_diff / (2.0 * mean);
+    return mean_diff / mean;
 }
 
 void DataLoader::test_instances()
@@ -99,6 +99,6 @@ void DataLoader::test_instances()
     for (const string &name : names)
     {
         const vector<vector<int>> instance = load("instancje/" + name + ".atsp");
-        cout << name << " : " << assymetry(instance) << endl;
+        cout << name << " : " << asymetry(instance) << endl;
     }
 }

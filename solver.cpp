@@ -31,11 +31,12 @@ void Solver::random_permutation(vector<int> &perm)
         sack[i] = i;
     }
 
-    std::random_device rd;
+    random_device rd;
+    mt19937 rand{rd()};
     for (int i = 0; i < n; i++)
     {
-        std::uniform_int_distribution<int> distribution(0,n-1-i);
-        int idx = distribution(rd);
+        uniform_int_distribution<int> distribution(0,n-1-i);
+        int idx = distribution(rand);
         perm[i] = sack[idx];
         sack.erase(sack.begin() + idx);
     }
@@ -189,15 +190,17 @@ SolverResult RandomWalkSolver::solve(vector<vector<int>> &instance, float T)
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
     random_device rd;
+    mt19937 rand{rd()};
     uniform_int_distribution<int> distribution(0,temp.size()-1);
+    int i, j;
     while(true)
     {
         chrono::steady_clock::time_point time = chrono::steady_clock::now();
         auto time_passed = chrono::duration_cast<chrono::microseconds> (time - begin).count();
         if (time_passed > T) break;
 
-        int i = distribution(rd);
-        int j = distribution(rd);
+        i = distribution(rand);
+        j = distribution(rand);
         if (i == j) continue;
          
         score = dynamic_score_solution(instance, temp, i, j, score);

@@ -19,10 +19,18 @@ class Result
         float avg_score;
         float std_score;
         float worst_score;
+
         float avg_time;
+        float std_time;
+
         float time_quality;
-        float steps;
-        float checked_solutions;
+
+        float avg_steps;
+        float std_steps;
+
+        float avg_checked_solutions;
+        float std_cs;
+
         string alg_name;
         Result(const vector<SolverResult> &srs, const vector<float> &scores,
                const vector<float> &times, const string alg_name);
@@ -34,9 +42,12 @@ class Result
                          r.std_score << ";" <<
                          r.worst_score << ";" <<
                          r.avg_time << ";" <<
+                         r.std_time << ";" <<
                          r.time_quality << ";" <<
-                         r.steps << ";" <<
-                         r.checked_solutions <<endl;
+                         r.avg_steps << ";" <<
+                         r.std_steps << ";" <<
+                         r.avg_checked_solutions << ";" <<
+                         r.std_cs <<endl;
         }
         static const string SIGNATURE;
 };

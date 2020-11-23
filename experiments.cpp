@@ -2,28 +2,48 @@
 
 using namespace std;
 
-const string Result::SIGNATURE = "NAME ; BEST ; AVG ; STD ; WORST ; TIME ; TIME_QUALITY ; STEPS ; CHECKED";
+const string Result::SIGNATURE = "NAME ; BEST ; AVG_SCORE ; STD_SCORE ; "
+                                 "WORST ; AVG_TIME ; STD_TIME ; "
+                                 "TIME_QUALITY ; "
+                                 "AVG_STEPS ; STD_STEPS ; "
+                                 "AVG_CHECKED ; STD_CHECKED;";
 
 Result::Result(const vector<SolverResult> &srs, const vector<float> &scores,
         const vector<float> &times, const string alg_name)
 {
     worst_score = *max_element(scores.begin(), scores.end());
     avg_score = accumulate(scores.begin(), scores.end(), 0.0) / 10.0;
-    std_score = 0;
+    std_score = 0.0;
     for(float s : scores)
-    {
         std_score += pow(s-avg_score, 2);
-    }
     std_score = sqrt(std_score / 10.0);
     best_score = *min_element(scores.begin(), scores.end());
-    avg_time = accumulate(times.begin(), times.end(), 0) / 10.0;
+
+    avg_time = accumulate(times.begin(), times.end(), 0.0) / 10.0;
+    std_time = 0.0;
+    for(float t : times)
+        std_time += pow(t-avg_time, 2);
+    std_time = sqrt(std_time / 10.0);
+
     time_quality = 1 / (avg_score * avg_time);  //the bigger the better
-    steps = 0;
+
+    avg_steps = 0.0;
     for (const SolverResult &sr : srs)
-        steps += sr.steps / 10.0;
-    checked_solutions = 0;
+        avg_steps += sr.steps / 10.0;
+    std_steps = 0.0;
+    for (const SolverResult &sr : srs)
+        std_steps += pow(sr.steps-avg_steps, 2);
+    std_steps = sqrt(std_steps / 10.0);
+
+
+    avg_checked_solutions = 0.0;
     for(const SolverResult &sr : srs)
-        checked_solutions += sr.checked_solutions / 10.0;
+        avg_checked_solutions += sr.checked_solutions / 10.0;
+    std_cs = 0.0;
+    for(const SolverResult &sr : srs)
+        std_cs += pow(sr.checked_solutions - avg_checked_solutions, 2);
+    std_cs = sqrt(std_cs / 10.0);
+
     this->alg_name = alg_name;
 }
 
@@ -31,18 +51,26 @@ Result::Result(const vector<SolverResult> &srs, const vector<float> &scores,
 Result tenfold_run(const string alg_name, Solver *s, const vector<vector<int>> instance,
                    const float T, const float instance_optimum)
 {
+    int repeats = 1;
+    if (instance.size() < 30) repeats = 10; 
+    if (alg_name == "H") repeats = 10; 
+    if (alg_name == "H" && instance.size() < 200) repeats = 100; 
+
     vector<float> scores;
     vector<float> times;
     vector<SolverResult> srs(10);
     for (int i = 0; i < 10; i++)
     {
+        vector<vector<int>> timing_instance_copy = instance;
         vector<vector<int>> instance_copy = instance;
+
         chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+        for(int r = 0; r < repeats-1; r++) s->solve(timing_instance_copy, T);
         srs[i] = s->solve(instance_copy, T);
         chrono::steady_clock::time_point end = chrono::steady_clock::now();
-
-        float time = chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-        times.push_back(time);
+        
+        float time = (float) chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+        times.push_back(time / (float) repeats);
         float score = (float) Solver::score_solution(srs[i].solution, instance);
         scores.push_back(score);
     }
@@ -135,11 +163,11 @@ void exp4()
        "br17",
        "p43",
        "ry48p",
-       "ft53",
        "rbg358"
     });
     
     float temp;
+    cout << "NAME ; AVG ; BEST" << endl;
     for (const string &instance_name : instances)
     {
         cout << "INSTANCE;" << instance_name << endl;
@@ -164,6 +192,7 @@ void exp4()
             if (temp < best_S) best_S = temp;
             cout << "S;" << sum_S / i << ";" << best_S << endl;
         }
+        cout << "INSTANCE END" << endl;
     }
 }
 
@@ -191,6 +220,20 @@ float distance(const vector<int> &perm1, const vector<int> &perm2)
     return dist;
 }
 
+float kendell_distance(const vector<int> &perm1, const vector<int> &perm2)
+{
+
+    vector<int> perm2_inv(perm2.size());
+    for(int i = 0; i < perm2.size(); i++)
+        perm2_inv[perm2[i]] = i;
+
+    float count = 0;
+    for(int i = 0; i < perm1.size(); i++) {
+        for(int j = i+1; j < perm2.size(); j++)
+            if(perm2_inv[perm1[i]] > perm2_inv[perm1[j]]) count++;
+    }
+}
+
 void exp5()
 {
     freopen("results/exp5.csv","w",stdout);
@@ -198,13 +241,15 @@ void exp5()
     DataLoader dl;
     GreedySolver *G = new GreedySolver();
     vector<string> instances({
+        "br17",
         "p43",
-        "ry48p"
     });
-    
+
+    cout << "SCORE ; DISTANCE" << endl;
     for (const string &instance_name : instances)
     {
-        vector<SolverResult> srs(200);
+        const int N = 2000;
+        vector<SolverResult> srs(N);
         int best_idx = -1;
         int best_score = numeric_limits<int>::max();
         int score;
@@ -216,7 +261,7 @@ void exp5()
         cout << "INSTANCE;" << instance_name << endl;
         
         // run alg 200, compute scores and best score
-        for(int i = 0; i < 200; i++)
+        for(int i = 0; i < N; i++)
         {
             instance_copy = instance;
             srs[i] = G->solve(instance_copy, -1.);
@@ -232,7 +277,8 @@ void exp5()
         for(int i = 0; i < srs.size(); i++)
         {
             dist = distance(srs[i].solution, srs[best_idx].solution);
-            cout << scores[i] / best_score << ";" << dist << endl;
+            cout << scores[i] / DataLoader::OPTIMA.at(instance_name) << ";" << dist << endl;
         }
+        cout << "INSTANCE END" << endl;
     }
 }
