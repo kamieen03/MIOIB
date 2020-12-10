@@ -1,10 +1,4 @@
 #include "solver.hpp"
-#include <limits>
-#include <algorithm>
-#include <random>
-#include <iostream>
-#include <chrono>
-
 const int MAX_INT = numeric_limits<int>::max();
 
 int argmin(vector<int> &row)
@@ -31,12 +25,10 @@ void Solver::random_permutation(vector<int> &perm)
         sack[i] = i;
     }
 
-    random_device rd;
-    mt19937 rand{rd()};
     for (int i = 0; i < n; i++)
     {
         uniform_int_distribution<int> distribution(0,n-1-i);
-        int idx = distribution(rand);
+        int idx = distribution(this->rand_gen);
         perm[i] = sack[idx];
         sack.erase(sack.begin() + idx);
     }
@@ -189,8 +181,6 @@ SolverResult RandomWalkSolver::solve(vector<vector<int>> &instance, float T)
     int checked_solutions = 0;
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
-    random_device rd;
-    mt19937 rand{rd()};
     uniform_int_distribution<int> distribution(0,temp.size()-1);
     int i, j;
     while(true)
@@ -199,8 +189,8 @@ SolverResult RandomWalkSolver::solve(vector<vector<int>> &instance, float T)
         auto time_passed = chrono::duration_cast<chrono::microseconds> (time - begin).count();
         if (time_passed > T) break;
 
-        i = distribution(rand);
-        j = distribution(rand);
+        i = distribution(this->rand_gen);
+        j = distribution(this->rand_gen);
         if (i == j) continue;
          
         score = dynamic_score_solution(instance, temp, i, j, score);
@@ -253,3 +243,78 @@ SolverResult SteepestSolver::solve(vector<vector<int>> &instance, float T)
     }
     return SolverResult(solution, steps, checked_solutions, init_score);
 }
+
+
+
+float SASolver::compute_max_t(const vector<vector<int>> &instance)
+{
+    int score, new_score;
+    vector<int> temp(instance.size());
+    float avg = 0;
+    for(int i = 0; i < 1000; i++)
+    {
+        random_permutation(temp);
+        score = score_solution(temp, instance);
+        new_score = dynamic_score_solution(instance, temp, 0, 1, score);
+        avg += (float) abs(score-new_score);
+    }
+    avg /= -1000.0;
+    return avg / log(C);
+}
+
+bool SASolver::accept(int s1, int s2)
+{
+    if(s2 <= s1) return true;
+    float p = exp( (s1-s2) / T );
+
+    return unif(rand_gen) < p;
+}
+
+SolverResult SASolver::solve(vector<vector<int>> &instance, float T)
+{
+    {
+        MAX_T = compute_max_t(instance);
+        T = MAX_T;
+        const int N = instance.size();
+        L = N*N / 10;
+    }
+    vector<int> solution(instance.size());
+    random_permutation(solution);
+    int score = score_solution(solution, instance);
+    int init_score = score;
+    bool accepted;
+    int new_score;
+    int steps = 0;
+    int checked_solutions = 0;
+    int epochs_wout_improvement = 0;
+
+    while(true)
+    {
+        accepted = false;
+        for(int i = 0; i < instance.size() - 1; i++)
+        {
+            for(int j = i+1; j < instance.size(); j++)
+            {
+                checked_solutions++;
+                if(checked_solutions % L == 0) T *= C;
+                new_score = dynamic_score_solution(instance, solution, i, j, score);
+                if(accept(score, new_score))
+                {
+                    if(new_score < score)
+                        epochs_wout_improvement = 0;
+                    score = new_score;
+                    swap(solution[i], solution[j]);
+                    accepted = true;
+                    steps++;
+                    break;
+                }
+            }
+            if (accepted) break;
+        }
+        if (epochs_wout_improvement >= 3) break;
+        epochs_wout_improvement++;
+    }
+    return SolverResult(solution, steps, checked_solutions, init_score);
+}
+
+
