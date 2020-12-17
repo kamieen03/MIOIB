@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from numpy import array as arr
 from scipy.stats import pearsonr
 import numpy as np
+from copy import deepcopy
 
 class Result2:
     instances = []
@@ -18,9 +19,6 @@ class Result2:
         self.std_steps       = []
         self.avg_checked     = []
         self.std_checked     = []
-
-    def __repr__(self):
-        return str(self.steps)
 
     def update(self, vals):
         assert len(vals) == 11
@@ -42,7 +40,7 @@ def exp2():
     with open("results/exp2.csv") as f:
         lines = f.readlines()[1:]
 
-    results = {alg: Result2() for alg in ['H', 'G', 'S', 'R', 'RW']}
+    results = {alg: Result2() for alg in ['H', 'G', 'S', 'R', 'RW', 'SA', 'T']}
     for l in lines:
         words = l.split(";")
         if words[0] == "INSTANCE":
@@ -51,18 +49,18 @@ def exp2():
             results[words[0]].update(words[1:])
 
     plt.rcParams["figure.figsize"] = (10,5)
-    exp2best(results)
-    exp2avg(results)
-    exp2worst(results)
-    exp2time(results)
-    exp2time_quality(results)
-    exp2steps(results)
-    exp2checked(results)
+    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple', 'tab:cyan', 'tab:gray'])
+    exp2best(results, deepcopy(colors))
+    exp2avg(results, deepcopy(colors))
+    exp2worst(results, deepcopy(colors))
+    exp2time(results, deepcopy(colors))
+    exp2time_quality(results, deepcopy(colors))
+    exp2steps(results, deepcopy(colors))
+    exp2checked(results, deepcopy(colors))
 
-def exp2best(results):
+def exp2best(results, colors):
     plt.clf()
     x = Result2.instances
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     for alg, result in results.items():
         c = next(colors)
         plt.plot(x, result.best, label = alg, c=c)
@@ -71,10 +69,9 @@ def exp2best(results):
     plt.legend()
     plt.savefig("plots/exp2best.pdf", format="pdf", bbox_inches='tight')
 
-def exp2avg(results):
+def exp2avg(results, colors):
     plt.clf()
     x = Result2.instances
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     for alg, result in results.items():
         c = next(colors)
         plt.plot(x, result.avg_score, label = alg, c=c)
@@ -86,10 +83,9 @@ def exp2avg(results):
     plt.legend()
     plt.savefig("plots/exp2avg.pdf", format="pdf", bbox_inches='tight')
 
-def exp2worst(results):
+def exp2worst(results, colors):
     plt.clf()
     x = Result2.instances
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     for alg, result in results.items():
         c = next(colors)
         plt.plot(x, result.worst, label = alg, c=c)
@@ -98,10 +94,9 @@ def exp2worst(results):
     plt.legend()
     plt.savefig("plots/exp2worst.pdf", format="pdf", bbox_inches='tight')
 
-def exp2time(results):
+def exp2time(results, colors):
     plt.clf()
     x = [17,35,43,48,55,70,124,170,323,403]
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     for alg, result in results.items():
         c = next(colors)
         plt.plot(x, result.avg_time, label = alg, c=c)
@@ -118,16 +113,15 @@ def exp2time(results):
     plt.legend()
     plt.savefig("plots/exp2time.pdf", format="pdf", bbox_inches='tight')
 
-def exp2time_quality(results):
+def exp2time_quality(results, colors):
     plt.clf()
     plt.ylabel('log')
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     x = [17,35,43,48,55,70,124,170,323,403]
     for alg, result in results.items():
         c = next(colors)
         plt.plot(x, result.time_quality, label = alg, c=c)
         plt.scatter(x, result.time_quality, c=c)
-    plt.xlabel("Wielkośćć instancji")
+    plt.xlabel("Wielkość instancji")
     plt.ylabel("Jakość w czasie")
     plt.yscale('log')
     plt.xlim(1,410)
@@ -135,10 +129,9 @@ def exp2time_quality(results):
     plt.legend()
     plt.savefig("plots/exp2time_quality.pdf", format="pdf", bbox_inches='tight')
 
-def exp2steps(results):
+def exp2steps(results, colors):
     plt.clf()
     x = [17,35,43,48,55,70,124,170,323,403]
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     for alg, result in results.items():
         c = next(colors)
         if alg in 'GS':
@@ -153,11 +146,10 @@ def exp2steps(results):
     plt.grid(True)
     plt.savefig("plots/exp2steps.pdf", format="pdf", bbox_inches='tight')
 
-def exp2checked(results):
+def exp2checked(results, colors):
     plt.clf()
     x = Result2.instances
     x = [17,35,43,48,55,70,124,170,323,403]
-    colors = iter(['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple'])
     for alg, result in results.items():
         c = next(colors)
         if alg != 'H':
@@ -207,11 +199,6 @@ def exp3():
             plt.scatter(results['S'].init, results['S'].final, label='S', s=4, c='orange')
             if n in [3,4]: plt.xlabel("Jakość początkowa")
             if n in [1,3]: plt.ylabel("Jakość końcowa")
-            print(instance)
-            print('G', np.mean(sorted(results['G'].final)[10:190]))
-            print('S', np.mean(sorted(results['S'].final)[10:190]))
-            print('G', np.std(sorted(results['G'].final)[10:190]))
-            print('S', np.std(sorted(results['S'].final)[10:190]))
             plt.title(instance)
             if n == 4: plt.legend()
             n+=1 
@@ -265,14 +252,14 @@ def exp5():
         lines = f.readlines()[1:]
     
     n = 1
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(10,5))
     for l in lines:
         words = l.split(";")
         if words[0] == "INSTANCE":
             x, y = [], []
             instance = words[1].strip()
         elif words[0].strip() == "INSTANCE END":
-            plt.subplot(2,1,n)
+            plt.subplot(1,2,n)
             plt.scatter(x, y, s=4)
             if n == 2: plt.xlabel("Jakość")
             plt.ylabel("Dystans")
@@ -285,6 +272,66 @@ def exp5():
     plt.savefig("plots/exp5.pdf", format = 'pdf', bbox_inches='tight')
     
 
+def expSA():
+    with open("results/expSA.csv") as f:
+        lines = f.readlines()[1:]
+
+    results = {}
+    C = None
+    for l in lines:
+        words = l.split(";")
+        if words[0] == "C":
+            C = float(words[1])
+            results[C] = Result2()
+        elif words[0] == "INSTANCE":
+            if words[1].strip() not in Result2.instances:
+                Result2.instances.append(words[1].strip())
+        else:
+            results[C].update(words[1:])
+
+    plt.rcParams["figure.figsize"] = (10,5)
+    plt.clf()
+    x = Result2.instances
+    for C, result in results.items():
+        plt.plot(x, result.avg_score, label = C)
+        #plt.fill_between(x, arr(result.avg_score) -
+        #        arr(result.std_score), arr(result.avg_score) +
+        #        arr(result.std_score), alpha = 0.5)
+    plt.xlabel("Instancje")
+    plt.ylabel("Jakość")
+    plt.legend()
+    plt.savefig("plots/expSA.pdf", format="pdf", bbox_inches='tight')
+
+def expT():
+    with open("results/expT.csv") as f:
+        lines = f.readlines()[1:]
+
+    results = {}
+    E = None
+    for l in lines:
+        words = l.split(";")
+        if words[0] == "E":
+            E = float(words[1])
+            results[E] = Result2()
+        elif words[0] == "INSTANCE":
+            if words[1].strip() not in Result2.instances:
+                Result2.instances.append(words[1].strip())
+        else:
+            results[E].update(words[1:])
+
+    plt.rcParams["figure.figsize"] = (10,5)
+    plt.clf()
+    x = Result2.instances
+    for E, result in results.items():
+        plt.plot(x, result.avg_score, label = E)
+        #plt.fill_between(x, arr(result.avg_score) -
+        #        arr(result.std_score), arr(result.avg_score) +
+        #        arr(result.std_score), alpha = 0.5)
+    plt.xlabel("Instancje")
+    plt.ylabel("Jakość")
+    plt.legend()
+    plt.savefig("plots/expT.pdf", format="pdf", bbox_inches='tight')
+
 
 def main():
     print("Generating exp2 plots")
@@ -295,6 +342,10 @@ def main():
     exp4()
     print("Generating exp5 plots")
     exp5()
+    print("Generating expSA plots")
+    expSA()
+    print("Generating expT plots")
+    expT()
 
 if __name__ == '__main__':
     main()

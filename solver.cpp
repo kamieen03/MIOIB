@@ -45,7 +45,7 @@ int Solver::score_solution(const vector<int> &solution, const vector<vector<int>
 
 int Solver::dynamic_score_solution(
             const vector<vector<int>> &instance,
-            vector<int> &solution,
+            const vector<int> &solution,
             int i,
             int j,
             int score)
@@ -246,7 +246,7 @@ SolverResult SteepestSolver::solve(vector<vector<int>> &instance, float T)
 
 
 
-float SASolver::compute_max_t(const vector<vector<int>> &instance)
+float SASolver::compute_t_bounds(const vector<vector<int>> &instance)
 {
     int score, new_score;
     vector<int> temp(instance.size());
@@ -259,24 +259,25 @@ float SASolver::compute_max_t(const vector<vector<int>> &instance)
         avg += (float) abs(score-new_score);
     }
     avg /= -1000.0;
-    return avg / log(C);
+    MAX_T = avg / log(0.95);
+    MIN_T = avg / log(0.001);
 }
 
 bool SASolver::accept(int s1, int s2)
 {
-    if(s2 <= s1) return true;
+    if(s2 < s1) return true;
+    if(s1 == s2) return false;
     float p = exp( (s1-s2) / T );
-
     return unif(rand_gen) < p;
 }
 
 SolverResult SASolver::solve(vector<vector<int>> &instance, float T)
 {
     {
-        MAX_T = compute_max_t(instance);
+        compute_t_bounds(instance);
         T = MAX_T;
         const int N = instance.size();
-        L = N*N / 10;
+        L = N*N;
     }
     vector<int> solution(instance.size());
     random_permutation(solution);
@@ -287,7 +288,7 @@ SolverResult SASolver::solve(vector<vector<int>> &instance, float T)
     int steps = 0;
     int checked_solutions = 0;
     int epochs_wout_improvement = 0;
-
+ 
     while(true)
     {
         accepted = false;
@@ -311,10 +312,115 @@ SolverResult SASolver::solve(vector<vector<int>> &instance, float T)
             }
             if (accepted) break;
         }
-        if (epochs_wout_improvement >= 3) break;
-        epochs_wout_improvement++;
+        if (epochs_wout_improvement >= 10) break;
+        if (T < MIN_T) epochs_wout_improvement++;
     }
     return SolverResult(solution, steps, checked_solutions, init_score);
 }
 
 
+
+void TabuSolver::init_tabu(int N)
+{
+    K = N/4;
+    candidates = vector<pair<int,int>*>(N*(N-1)/2/5);
+    tabu = vector<vector<int>>(N);
+    for(int i = 0; i < N; i++)
+        tabu[i] = vector<int>(N);
+    pairs.clear();
+    for(int i = 0; i < N; i++) {
+        for(int j = i+1; j < N; j++) 
+            pairs.push_back(make_pair(i,j));
+    }
+}
+
+void TabuSolver::update_tabu(pair<int, int>* IJ)
+{
+    for(int i = 0; i < tabu.size(); i++) {
+        for(int j = i+1; j < tabu.size(); j++) {
+            tabu[i][j]--;
+            if(tabu[i][j] < 0)
+                tabu[i][j] = 0;
+        }
+    }
+    tabu[IJ->first][IJ->second] = (int) (tabu.size() * K);
+}
+
+void TabuSolver::construct_candidates(
+        const vector<vector<int>> &instance,
+        const vector<int> &solution,
+        const int score)
+{
+    const int N = instance.size();
+    for(int i = 0; i < N; i++) {
+        for(int j = i+1; j < N; j++)
+            tabu[j][i] = dynamic_score_solution(instance, solution, i, j, score);
+    }
+    sort(pairs.begin(), pairs.end(), [this](auto p1, auto p2){return compare_pairs(&p1,&p2);});
+    for(int i = 0; i < candidates.size(); i++)
+        candidates[i] = &pairs[i];
+    best_candidate_gain = tabu[candidates[0]->second][candidates[0]->first] - score;
+    pair<int,int> *worst = candidates.back();
+    worst_candidate_gain = tabu[worst->second][worst->first] - score;
+}
+
+pair<int, int>* TabuSolver::choose_IJ(const vector<vector<int>> &instance, const vector<int> &solution,
+     int &checked_solutions, const int score, const int best_score)
+{
+    for(const auto &ij : candidates)
+    {
+        tabu[ij->second][ij->first] = dynamic_score_solution(instance, solution, ij->first, ij->second, score);
+    }
+    checked_solutions += candidates.size();
+    sort(candidates.begin(), candidates.end(), [this](auto p1, auto p2){return compare_pairs(p1,p2);});
+    if (tabu[candidates[0]->second][candidates[0]->first] - score > worst_candidate_gain)
+    {
+        construct_candidates(instance, solution, score);
+        return choose_IJ(instance, solution, checked_solutions, score, best_score);
+    }
+
+    for(const auto &ij : candidates)
+    {
+        if(tabu[ij->second][ij->first] < best_score)   // pair is better than current best
+            return ij;
+        if(tabu[ij->first][ij->second] == 0)      // ther is no tabu on pair
+            return ij;
+    }
+}
+
+SolverResult TabuSolver::solve(vector<vector<int>> &instance, float T)
+{
+    init_tabu(instance.size());
+    vector<int> solution(instance.size());
+    random_permutation(solution);
+    int score = score_solution(solution, instance);
+    vector<int> best_solution = solution;
+    int best_score = score;
+    construct_candidates(instance, solution, score);
+
+    int init_score = score;
+    int best_ngbh_score = score;
+    int epochs_wout_improvement = 0;
+    int new_score, best_I, best_J;
+    int steps = 0;
+    int checked_solutions = 0;
+    pair<int, int>* IJ;
+
+    while(true)
+    {
+        IJ = choose_IJ(instance, solution, checked_solutions, score, best_score);
+        update_tabu(IJ);
+        swap(solution[IJ->first], solution[IJ->second]);
+        score = tabu[IJ->second][IJ->first];
+        if(score < best_score)
+        {
+            best_score = score;
+            best_solution = solution;
+            epochs_wout_improvement = 0;
+        }
+        if(epochs_wout_improvement >= EPOCHS_TO_STOP) break;
+        epochs_wout_improvement++;
+        steps++;
+    }
+    return SolverResult(solution, steps, checked_solutions, init_score);
+}

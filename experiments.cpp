@@ -89,6 +89,8 @@ void exp2()
     SteepestSolver *S = new SteepestSolver();
     RandomSolver *R = new RandomSolver();
     RandomWalkSolver *RW = new RandomWalkSolver();
+    SASolver *SA = new SASolver();
+    TabuSolver *T = new TabuSolver();
 
     vector<string> instances({
             "br17",
@@ -115,6 +117,8 @@ void exp2()
         cout << tenfold_run("S", S, instance, -1., DataLoader::OPTIMA.at(instance_name));
         cout << tenfold_run("R", R, instance, time, DataLoader::OPTIMA.at(instance_name));
         cout << tenfold_run("RW", RW, instance, time, DataLoader::OPTIMA.at(instance_name));
+        cout << tenfold_run("SA", SA, instance, -1., DataLoader::OPTIMA.at(instance_name));
+        cout << tenfold_run("T", T, instance, -1., DataLoader::OPTIMA.at(instance_name));
     }
 }
 
@@ -282,3 +286,77 @@ void exp5()
         cout << "INSTANCE END" << endl;
     }
 }
+
+
+
+void expSA()
+{
+    freopen("results/expSA.csv","w",stdout);
+
+    DataLoader dl;
+    SASolver *SA = new SASolver();
+    vector<string> instances({
+            "br17",
+            "ftv35",
+            "p43",
+            "ry48p",
+            "ftv55",
+            "ft70",
+            "kro124p",
+            "ftv170",
+            "rbg323",
+            "rbg403"
+    });
+    //float CS[] = {0.0};
+    float CS[] = {0.95, .9, 0.85, 0.8, 0.0};
+
+    cout << Result::SIGNATURE << endl;
+    for (const float C : CS)
+    {
+        cout << "C;" <<  C << endl;
+        SA->setC(C);
+        for (const string &instance_name : instances)
+        {
+            const vector<vector<int>> instance = dl.load("instancje/" + instance_name + ".atsp");
+            cout << "INSTANCE;" << instance_name << endl;
+            cout << tenfold_run("SA", SA, instance, -1., DataLoader::OPTIMA.at(instance_name));
+        }
+    }
+}
+
+
+void expT()
+{
+    freopen("results/expT.csv","w",stdout);
+
+    DataLoader dl;
+    TabuSolver *T = new TabuSolver();
+    vector<string> instances({
+            "br17",
+            "ftv35",
+            "p43",
+            "ry48p",
+            "ftv55",
+            "ft70",
+            "kro124p",
+            "ftv170",
+            "rbg323",
+            "rbg403"
+    });
+    float ES[] = {0.0, 0.25, 0.5, 1.0, 2.0};
+
+    cout << Result::SIGNATURE << endl;
+    for (const float E : ES)
+    {
+        cout << "E;" <<  E << endl;
+        T->set_k(E);
+        for (const string &instance_name : instances)
+        {
+            const vector<vector<int>> instance = dl.load("instancje/" + instance_name + ".atsp");
+            cout << "INSTANCE;" << instance_name << endl;
+            cout << tenfold_run("T", T, instance, -1., DataLoader::OPTIMA.at(instance_name));
+        }
+    }
+}
+
+

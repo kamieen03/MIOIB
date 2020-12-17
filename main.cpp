@@ -21,6 +21,12 @@ int main(int argc, char** argv)
         if (nums.find("5") != string::npos) {
             exp5();
         }
+        if (nums.find("SA") != string::npos) {
+            expSA();
+        }
+        if (nums.find("T") != string::npos) {
+            expT();
+        }
     }
     return 0;
 }
