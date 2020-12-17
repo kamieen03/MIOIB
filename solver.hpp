@@ -108,8 +108,9 @@ class TabuSolver: public Solver
         int EPOCHS_TO_STOP = 50;
         vector<pair<int,int>*> candidates;
         vector<pair<int,int>> pairs;
-        int worst_candidate_gain = 0;
-        int best_candidate_gain = 0;
+        //int worst_candidate_gain = 0;
+        //int best_candidate_gain = 0;
+        float diff;
 
         vector<vector<int>> tabu;           // upper half holds tabu counters. Lower half holds temporal (i,j) moves scores
         void init_tabu(int N);

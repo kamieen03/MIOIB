@@ -322,8 +322,7 @@ SolverResult SASolver::solve(vector<vector<int>> &instance, float T)
 
 void TabuSolver::init_tabu(int N)
 {
-    K = N/4;
-    candidates = vector<pair<int,int>*>(N*(N-1)/2/5);
+    candidates = vector<pair<int,int>*>(N*(N-1)/2/2);
     tabu = vector<vector<int>>(N);
     for(int i = 0; i < N; i++)
         tabu[i] = vector<int>(N);
@@ -359,9 +358,11 @@ void TabuSolver::construct_candidates(
     sort(pairs.begin(), pairs.end(), [this](auto p1, auto p2){return compare_pairs(&p1,&p2);});
     for(int i = 0; i < candidates.size(); i++)
         candidates[i] = &pairs[i];
-    best_candidate_gain = tabu[candidates[0]->second][candidates[0]->first] - score;
+    float best_candidate_gain = tabu[candidates[0]->second][candidates[0]->first] - score;
     pair<int,int> *worst = candidates.back();
-    worst_candidate_gain = tabu[worst->second][worst->first] - score;
+    float worst_candidate_gain = tabu[worst->second][worst->first] - score;
+    float lambda = 0.5;
+    diff = (1-lambda)*best_candidate_gain + lambda*worst_candidate_gain;
 }
 
 pair<int, int>* TabuSolver::choose_IJ(const vector<vector<int>> &instance, const vector<int> &solution,
@@ -373,7 +374,7 @@ pair<int, int>* TabuSolver::choose_IJ(const vector<vector<int>> &instance, const
     }
     checked_solutions += candidates.size();
     sort(candidates.begin(), candidates.end(), [this](auto p1, auto p2){return compare_pairs(p1,p2);});
-    if (tabu[candidates[0]->second][candidates[0]->first] - score > worst_candidate_gain)
+    if (tabu[candidates[0]->second][candidates[0]->first] - score > diff)
     {
         construct_candidates(instance, solution, score);
         return choose_IJ(instance, solution, checked_solutions, score, best_score);
