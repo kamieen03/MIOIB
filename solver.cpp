@@ -322,7 +322,7 @@ SolverResult SASolver::solve(vector<vector<int>> &instance, float T)
 
 void TabuSolver::init_tabu(int N)
 {
-    candidates = vector<pair<int,int>*>(N*(N-1)/2/2);
+    candidates = vector<pair<int,int>*>(N*(N-1)/2/3);
     tabu = vector<vector<int>>(N);
     for(int i = 0; i < N; i++)
         tabu[i] = vector<int>(N);
@@ -361,7 +361,7 @@ void TabuSolver::construct_candidates(
     float best_candidate_gain = tabu[candidates[0]->second][candidates[0]->first] - score;
     pair<int,int> *worst = candidates.back();
     float worst_candidate_gain = tabu[worst->second][worst->first] - score;
-    float lambda = 0.5;
+    lambda = 0.25;
     diff = (1-lambda)*best_candidate_gain + lambda*worst_candidate_gain;
 }
 

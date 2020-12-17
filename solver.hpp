@@ -110,6 +110,7 @@ class TabuSolver: public Solver
         vector<pair<int,int>> pairs;
         //int worst_candidate_gain = 0;
         //int best_candidate_gain = 0;
+        float lambda = 0.25;
         float diff;
 
         vector<vector<int>> tabu;           // upper half holds tabu counters. Lower half holds temporal (i,j) moves scores

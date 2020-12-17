@@ -343,7 +343,7 @@ void expT()
             "rbg323",
             "rbg403"
     });
-    float ES[] = {0.0, 0.25, 0.5, 1.0, 2.0};
+    float ES[] = {1.0};
 
     cout << Result::SIGNATURE << endl;
     for (const float E : ES)
